@@ -155,6 +155,12 @@ class Transport(object):
 
         return session
 
+    def close_session(self):
+        if not self.session:
+            return
+        self.session.close()
+        self.session = None
+
     def send_message(self, message):
         # TODO support kerberos session with message encryption
 
