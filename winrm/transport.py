@@ -1,21 +1,11 @@
 from __future__ import unicode_literals
 from contextlib import contextmanager
 import re
-import sys
 import os
 import weakref
 import distutils
+import six
 
-is_py2 = sys.version[0] == '2'
-
-if is_py2:
-    from urlparse import urlsplit, urlunsplit
-    # use six for this instead?
-    unicode_type = type(u'')
-else:
-    from urllib.parse import urlsplit, urlunsplit
-    # use six for this instead?
-    unicode_type = type(u'')
 
 import requests
 import requests.auth
@@ -169,7 +159,7 @@ class Transport(object):
 
         # urllib3 fails on SSL retries with unicode buffers- must send it a byte string
         # see https://github.com/shazow/urllib3/issues/717
-        if isinstance(message, unicode_type):
+        if isinstance(message, six.string_types):
             message = message.encode('utf-8')
 
         request = requests.Request('POST', self.endpoint, data=message)
@@ -182,16 +172,18 @@ class Transport(object):
             return response_text
         except requests.HTTPError as ex:
             if ex.response.status_code == 401:
-                raise InvalidCredentialsError("the specified credentials were rejected by the server")
+                raise InvalidCredentialsError("the specified credentials were rejected by the server",
+                                              winrm_resposne=ex.response.content, code=ex.response.status_code)
             if ex.response.content:
                 response_text = ex.response.content
             else:
-                response_text = ''
+                response_text = ''.encode()
             # Per http://msdn.microsoft.com/en-us/library/cc251676.aspx rule 3,
             # should handle this 500 error and retry receiving command output.
             if b'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive' in message and b'Code="2150858793"' in response_text:
-                raise WinRMOperationTimeoutError()
+                raise WinRMOperationTimeoutError(winrm_resposne=ex.response.content, code=ex.response.status_code)
 
             error_message = 'Bad HTTP response returned from server. Code {0}'.format(ex.response.status_code)
 
-            raise WinRMTransportError('http', error_message)
+            raise WinRMTransportError('http', error_message, winrm_resposne=ex.response.content,
+                                      code=ex.response.status_code)
