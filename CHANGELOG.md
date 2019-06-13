@@ -5,7 +5,7 @@
 - Set minimum version of requests-credssp to support Kerberos auth over CredSSP and other changes
 - Added `proxy` support where it can be defined within the application.
 - Added a toggle for the ability to read proxy information from environment variables via `proxy_ignore_env`
-
+- Adding `reconnection_retries` and `reconnection_backoff` to automatically retry connection issues in requests.
 ### Version 0.3.0
 - Added support for message encryption over HTTP when using NTLM/Kerberos/CredSSP
 - Added parameter to disable TLSv1.2 when using CredSSP for Server 2008 support

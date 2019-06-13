@@ -67,7 +67,7 @@ class Transport(object):
             proxy_ignore_env=False,
             reconnection_retries=0,
             reconnection_backoff=2.0,
-        ):
+    ):
         self.endpoint = endpoint
         self.username = username
         self.password = password
@@ -135,7 +135,7 @@ class Transport(object):
         # validate credential requirements for various auth types
         if self.auth_method != 'kerberos':
             if self.auth_method == 'certificate' or (
-                            self.auth_method == 'ssl' and (self.cert_pem or self.cert_key_pem)):
+                    self.auth_method == 'ssl' and (self.cert_pem or self.cert_key_pem)):
                 if not self.cert_pem or not self.cert_key_pem:
                     raise InvalidCredentialsError("both cert_pem and cert_key_pem must be specified for cert auth")
                 if not os.path.exists(self.cert_pem):
@@ -161,7 +161,7 @@ class Transport(object):
         session = requests.Session()
 
         proxies = dict()
-        if self.proxy is not None:      # pragma: no cover
+        if self.proxy is not None:  # pragma: no cover
             # If there was a proxy specified then use it
             proxies = {
                 'http': self.proxy,
@@ -171,15 +171,24 @@ class Transport(object):
         # Merge proxy environment variables
         session.trust_env = self.proxy_use_env
         settings = session.merge_environment_settings(url=self.endpoint,
-                      proxies=proxies, stream=None, verify=None, cert=None)
+                                                      proxies=proxies, stream=None, verify=None, cert=None)
 
         # Retry on connection errors, with a backoff factor
-        retries = requests.packages.urllib3.util.retry.Retry(total=self.reconnection_retries,
-                                                             connect=self.reconnection_retries,
-                                                             status=self.reconnection_retries,
-                                                             read=0,
-                                                             backoff_factor=self.reconnection_backoff,
-                                                             status_forcelist=(425, 429, 503))
+        retry_kwargs = {
+            'total': self.reconnection_retries,
+            'connect': self.reconnection_retries,
+            'read': 0,
+            'backoff_factor': self.reconnection_backoff,
+            'status_forcelist': (425, 429, 503)
+        }
+        try:
+            retries = requests.packages.urllib3.util.retry.Retry(status=self.reconnection_retries, **retry_kwargs)
+        except TypeError:
+            # From https://github.com/diyan/pywinrm/pull/174#issuecomment-501010753
+            #    - Minimum required requests is 2.9.1, status was added for requests 2.14.0
+            retries = requests.packages.urllib3.util.retry.Retry(**retry_kwargs)
+
+
         session.mount('http://', requests.adapters.HTTPAdapter(max_retries=retries))
         session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
 
@@ -215,7 +224,8 @@ class Transport(object):
             )
             kerb_args = self._get_args(man_args, opt_args, HTTPKerberosAuth.__init__)
             session.auth = HTTPKerberosAuth(**kerb_args)
-            encryption_available = hasattr(session.auth, 'winrm_encryption_available') and session.auth.winrm_encryption_available
+            encryption_available = hasattr(session.auth,
+                                           'winrm_encryption_available') and session.auth.winrm_encryption_available
         elif self.auth_method in ['certificate', 'ssl']:
             if self.auth_method == 'ssl' and not self.cert_pem and not self.cert_key_pem:
                 # 'ssl' was overloaded for HTTPS with optional certificate auth,
