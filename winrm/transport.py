@@ -64,7 +64,10 @@ class Transport(object):
             credssp_minimum_version=2,
             send_cbt=True,
             proxy=None,
-            proxy_ignore_env=False):
+            proxy_ignore_env=False,
+            reconnection_retries=0,
+            reconnection_backoff=2.0,
+        ):
         self.endpoint = endpoint
         self.username = username
         self.password = password
@@ -84,6 +87,8 @@ class Transport(object):
         self.send_cbt = send_cbt
         self.proxy = proxy
         self.proxy_use_env = not proxy_ignore_env
+        self.reconnection_retries = reconnection_retries
+        self.reconnection_backoff = reconnection_backoff
 
         if self.server_cert_validation not in [None, 'validate', 'ignore']:
             raise WinRMError('invalid server_cert_validation mode: %s' % self.server_cert_validation)
@@ -168,6 +173,18 @@ class Transport(object):
         settings = session.merge_environment_settings(url=self.endpoint,
                       proxies=proxies, stream=None, verify=None, cert=None)
 
+        # Retry on connection errors, with a backoff factor
+        retries = requests.packages.urllib3.util.retry.Retry(total=self.reconnection_retries,
+                                                             connect=self.reconnection_retries,
+                                                             status=self.reconnection_retries,
+                                                             read=0,
+                                                             backoff_factor=self.reconnection_backoff,
+                                                             status_forcelist=(425, 429, 503))
+        session.mount('http://', requests.adapters.HTTPAdapter(max_retries=retries))
+        session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+
+        # get proxy settings from env
+        # FUTURE: allow proxy to be passed in directly to supersede this value
         session.proxies = settings['proxies']
 
         # specified validation mode takes precedence
