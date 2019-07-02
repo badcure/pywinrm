@@ -24,7 +24,7 @@ class WinRMTransportError(Exception):
     @property
     def message(self):
         return 'Bad HTTP response returned from server. Code {status_code}: {reason}'.format(
-            status_code=self.code, reason=self.winrm_fault_reason)
+            status_code=self.code, reason=self.response_text)
 
     @property
     def response_text(self):
