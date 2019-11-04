@@ -86,18 +86,3 @@ def test_run_command_taking_more_than_operation_timeout_sec(protocol_real):
 
     protocol_real.cleanup_command(shell_id, command_id)
     protocol_real.close_shell(shell_id)
-
-
-@xfail()
-def test_set_timeout(protocol_real):
-    raise NotImplementedError()
-
-
-@xfail()
-def test_set_max_env_size(protocol_real):
-    raise NotImplementedError()
-
-
-@xfail()
-def test_set_locale(protocol_real):
-    raise NotImplementedError()

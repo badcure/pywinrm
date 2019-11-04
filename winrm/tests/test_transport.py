@@ -1,4 +1,3 @@
-# coding=utf-8
 import os
 import mock
 import unittest
@@ -8,8 +7,6 @@ from distutils.version import StrictVersion
 
 from winrm import transport
 from winrm.exceptions import WinRMError, InvalidCredentialsError
-
-REQUEST_VERSION = requests.__version__.split('.')
 
 
 class TestTransport(base_test.BaseTest):
