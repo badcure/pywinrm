@@ -1,0 +1,5 @@
+-r ../extras/requirements-credssp.txt
+-r ../extras/requirements-kerberos.txt
+-r ../../requirements.txt
+
+-r requirements-testing-packages.txt
